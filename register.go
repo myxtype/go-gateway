@@ -2,8 +2,8 @@ package gateway
 
 import (
 	"encoding/json"
+	"github.com/myxtype/go-gateway/pkg/logger"
 	"github.com/myxtype/go-gateway/worker"
-	"log"
 	"sync"
 )
 
@@ -39,7 +39,7 @@ func (r *Register) OnWorkerStart() {}
 func (r *Register) OnWorkerStop() {}
 
 func (r *Register) OnConnect(conn *worker.Connection) {
-	log.Printf("已连接 %v id: %v\n", conn.RemoteAddr().String(), conn.Id())
+	logger.Sugar.Infof("已连接 %v id: %v", conn.RemoteAddr().String(), conn.Id())
 }
 
 func (r *Register) OnMessage(conn *worker.Connection, message []byte) {
@@ -52,24 +52,24 @@ func (r *Register) OnMessage(conn *worker.Connection, message []byte) {
 	switch msg.Event {
 	case "gateway_connect":
 		if msg.Certificate != r.c.Certificate {
-			log.Printf("certificate invalid, gateway address: %v \n", conn.RemoteAddr().String())
+			logger.Sugar.Infof("certificate invalid, gateway address: %v", conn.RemoteAddr().String())
 			conn.Close()
 			return
 		}
-		log.Printf("新增Gateway %v id: %v \n", conn.RemoteAddr().String(), conn.Id())
+		logger.Sugar.Infof("新增Gateway %v id: %v", conn.RemoteAddr().String(), conn.Id())
 		r.gatewayConnections.Store(conn.Id(), msg.Address)
 		r.broadcastAddresses(nil)
 	case "worker_connect":
 		if msg.Certificate != r.c.Certificate {
-			log.Printf("certificate invalid, worker address: %v \n", conn.RemoteAddr().String())
+			logger.Sugar.Infof("certificate invalid, worker address: %v", conn.RemoteAddr().String())
 			conn.Close()
 			return
 		}
-		log.Printf("新增Worker %v id: %v \n", conn.RemoteAddr().String(), conn.Id())
+		logger.Sugar.Infof("新增Worker %v id: %v", conn.RemoteAddr().String(), conn.Id())
 		r.workerConnections.Store(conn.Id(), conn)
 		r.broadcastAddresses(conn)
 	case "ping":
-		log.Printf("Ping %v id: %v \n", conn.RemoteAddr().String(), conn.Id())
+		logger.Sugar.Infof("Ping %v id: %v", conn.RemoteAddr().String(), conn.Id())
 	default:
 		conn.Close()
 		return
@@ -77,7 +77,7 @@ func (r *Register) OnMessage(conn *worker.Connection, message []byte) {
 }
 
 func (r *Register) OnClose(conn *worker.Connection) {
-	log.Printf("已断开连接 %v id: %v\n", conn.RemoteAddr().String(), conn.Id())
+	logger.Sugar.Infof("已断开连接 %v id: %v", conn.RemoteAddr().String(), conn.Id())
 
 	if _, found := r.gatewayConnections.Load(conn.Id()); found {
 		r.gatewayConnections.Delete(conn.Id())

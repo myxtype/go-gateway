@@ -21,6 +21,10 @@ func NewAsyncTcpConnection(addr string) *AsyncTcpConnection {
 	}
 }
 
+func (tc *AsyncTcpConnection) Addr() string {
+	return tc.addr
+}
+
 func (tc *AsyncTcpConnection) Connect() error {
 	netAddr, err := net.ResolveTCPAddr("tcp", tc.addr)
 	if err != nil {
@@ -42,17 +46,13 @@ func (tc *AsyncTcpConnection) Connect() error {
 		tc.OnConnect(tc)
 	}
 
-	tc.onMessageReceived(tc.conn)
+	tc.onMessageReceived()
 
 	return nil
 }
 
-func (tc *AsyncTcpConnection) Conn() *net.TCPConn {
-	return tc.conn
-}
-
-func (tc *AsyncTcpConnection) onMessageReceived(conn *net.TCPConn) {
-	reader := bufio.NewReader(conn)
+func (tc *AsyncTcpConnection) onMessageReceived() {
+	reader := bufio.NewReader(tc.conn)
 	for {
 		msg, err := reader.ReadBytes('\n')
 		if err != nil || err == io.EOF {
@@ -63,6 +63,22 @@ func (tc *AsyncTcpConnection) onMessageReceived(conn *net.TCPConn) {
 			tc.OnMessage(tc, msg)
 		}
 	}
+}
+
+func (tc *AsyncTcpConnection) Conn() *net.TCPConn {
+	return tc.conn
+}
+
+func (tc *AsyncTcpConnection) Close() error {
+	return tc.conn.Close()
+}
+
+func (tc *AsyncTcpConnection) RemoteAddr() net.Addr {
+	return tc.conn.RemoteAddr()
+}
+
+func (tc *AsyncTcpConnection) Write(b []byte) (int, error) {
+	return tc.conn.Write(b)
 }
 
 func (tc *AsyncTcpConnection) Send(b []byte) error {

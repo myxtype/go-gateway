@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/myxtype/go-gateway/client"
+	"github.com/myxtype/go-gateway/pkg/logger"
 	"github.com/myxtype/go-gateway/pkg/timer"
 	"github.com/myxtype/go-gateway/protocol"
 	"github.com/myxtype/go-gateway/worker"
-	"log"
 	"sync"
 	"time"
 )
@@ -57,7 +57,7 @@ func (g *Gateway) OnWorkerStart() {
 	})
 	go func() {
 		if err := inner.Start(); err != nil {
-			log.Panic(err)
+			logger.Sugar.Panic(err)
 		}
 	}()
 
@@ -130,7 +130,7 @@ func (g *Gateway) registerAddress() {
 		}).Bytes()
 
 		if err := conn.Send(buffer); err != nil {
-			log.Panic(err)
+			logger.Sugar.Panic(err)
 		}
 
 		ping = timer.NewTimer(g.c.PingInterval, func() {
@@ -147,32 +147,34 @@ func (g *Gateway) registerAddress() {
 	}
 
 	if err := c.Connect(); err != nil {
-		log.Panic(err)
+		logger.Sugar.Panic(err)
 	}
 }
 
 // onWorkerConnect business连接
 func (g *Gateway) onWorkerConnect(conn *worker.Connection) {
-
+	logger.Sugar.Infof("Gateway: worker %v 已连接", conn.Id())
 }
 
 // onWorkerClose business断开
 func (g *Gateway) onWorkerClose(conn *worker.Connection) {
 	g.workerConnections.Delete(conn.Id())
+
+	logger.Sugar.Infof("Gateway: worker %v 已断开连接", conn.Id())
 }
 
 // onWorkerMessage business消息
 func (g *Gateway) onWorkerMessage(conn *worker.Connection, data []byte) {
 	var msg BusinessMessage
 	if err := json.Unmarshal(data, &msg); err != nil {
-		log.Println(err)
+		logger.Sugar.Errorf("Gateway: 来自[%v]无效的消息体 %v, Error: %v", conn.Id(), string(data), err.Error())
 		return
 	}
 
 	// 判断否是否认证
 	if _, found := conn.Payload.Load("authorized"); !found {
 		if msg.Cmd != protocol.CMD_WORKER_CONNECT && msg.Cmd != protocol.CMD_GATEWAY_CLIENT_CONNECT {
-			log.Printf("Unauthorized request from %v \n", conn.RemoteAddr().String())
+			logger.Sugar.Infof("Unauthorized request from %v", conn.RemoteAddr().String())
 			conn.Close()
 			return
 		}
@@ -183,10 +185,11 @@ func (g *Gateway) onWorkerMessage(conn *worker.Connection, data []byte) {
 		var certificate string
 		if err := msg.UnmarshalBody(&certificate); err == nil {
 			if certificate != g.c.Certificate {
-				log.Printf("Gateway: Worker key does not match %v != %v \n", certificate, g.c.Certificate)
+				logger.Sugar.Infof("Gateway: Worker key does not match %v != %v", certificate, g.c.Certificate)
 				conn.Close()
 				return
 			}
+			logger.Sugar.Infof("Gateway: Worker %v authorized", conn.Id())
 			g.workerConnections.Store(conn.Id(), conn)
 			conn.Payload.Store("authorized", true)
 		}
@@ -195,7 +198,7 @@ func (g *Gateway) onWorkerMessage(conn *worker.Connection, data []byte) {
 		var certificate string
 		if err := msg.UnmarshalBody(&certificate); err == nil {
 			if certificate != g.c.Certificate {
-				log.Printf("Gateway: GatewayClient key does not match %v != %v \n", certificate, g.c.Certificate)
+				logger.Sugar.Infof("Gateway: GatewayClient key does not match %v != %v", certificate, g.c.Certificate)
 				conn.Close()
 				return
 			}
@@ -208,7 +211,7 @@ func (g *Gateway) onWorkerMessage(conn *worker.Connection, data []byte) {
 		}
 
 	default:
-		log.Printf("Gateway inner pack err cmd=%v \n", msg.Cmd)
+		logger.Sugar.Infof("Gateway inner pack err cmd=%v", msg.Cmd)
 	}
 }
 
@@ -216,7 +219,7 @@ func (g *Gateway) onWorkerMessage(conn *worker.Connection, data []byte) {
 func (g *Gateway) sendToWorker(cmd protocol.Protocol, conn *worker.Connection, data []byte) {
 	workerConn, err := g.router()
 	if err != nil {
-		log.Println(err)
+		logger.Sugar.Info(err)
 		return
 	}
 
@@ -232,7 +235,7 @@ func (g *Gateway) sendToWorker(cmd protocol.Protocol, conn *worker.Connection, d
 	}
 
 	if err := workerConn.Send(msg.Bytes()); err != nil {
-		log.Println(err)
+		logger.Sugar.Info(err)
 	}
 }
 
@@ -244,7 +247,7 @@ func (g *Gateway) router() (*worker.Connection, error) {
 		return true
 	})
 	if len(conns) == 0 {
-		return nil, errors.New("no business worker online")
+		return nil, errors.New("no pkg worker online")
 	}
 	return conns[0], nil
 }
@@ -256,7 +259,7 @@ func (g *Gateway) pingBusinessWorker() {
 	}).Bytes()
 	g.workerConnections.Range(func(key, value interface{}) bool {
 		if err := value.(*worker.Connection).Send(msg); err != nil {
-			log.Println(err)
+			logger.Sugar.Info(err)
 		}
 		return true
 	})
