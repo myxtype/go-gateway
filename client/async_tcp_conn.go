@@ -3,7 +3,6 @@ package client
 import (
 	"bufio"
 	"io"
-	"log"
 	"net"
 )
 
@@ -11,8 +10,9 @@ type AsyncTcpConnection struct {
 	addr string
 	conn *net.TCPConn
 
-	OnConnect func(conn *net.TCPConn)
-	OnClose   func(conn *net.TCPConn)
+	OnConnect func(*AsyncTcpConnection)
+	OnClose   func(*AsyncTcpConnection)
+	OnMessage func(*AsyncTcpConnection, []byte)
 }
 
 func NewAsyncTcpConnection(addr string) *AsyncTcpConnection {
@@ -34,12 +34,12 @@ func (tc *AsyncTcpConnection) Connect() error {
 	defer func() {
 		tc.conn.Close()
 		if tc.OnClose != nil {
-			tc.OnClose(tc.conn)
+			tc.OnClose(tc)
 		}
 	}()
 
 	if tc.OnConnect != nil {
-		tc.OnConnect(tc.conn)
+		tc.OnConnect(tc)
 	}
 
 	tc.onMessageReceived(tc.conn)
@@ -54,11 +54,18 @@ func (tc *AsyncTcpConnection) Conn() *net.TCPConn {
 func (tc *AsyncTcpConnection) onMessageReceived(conn *net.TCPConn) {
 	reader := bufio.NewReader(conn)
 	for {
-		msg, err := reader.ReadString('\n')
+		msg, err := reader.ReadBytes('\n')
 		if err != nil || err == io.EOF {
 			break
 		}
 
-		log.Println(msg)
+		if tc.OnMessage != nil {
+			tc.OnMessage(tc, msg)
+		}
 	}
+}
+
+func (tc *AsyncTcpConnection) Send(b []byte) error {
+	_, err := tc.conn.Write(append(b, '\n'))
+	return err
 }

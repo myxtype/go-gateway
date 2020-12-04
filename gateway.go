@@ -8,7 +8,6 @@ import (
 	"github.com/myxtype/go-gateway/protocol"
 	"github.com/myxtype/go-gateway/worker"
 	"log"
-	"net"
 	"sync"
 	"time"
 )
@@ -44,17 +43,17 @@ func (g *Gateway) Start() error {
 	return nil
 }
 
-func (r *Gateway) OnWorkerStart() {
+func (g *Gateway) OnWorkerStart() {
 	// 客户端心跳
-	go timer.NewTimer(25*time.Second, r.ping).Start()
+	go timer.NewTimer(g.c.PingInterval, g.ping).Start()
 	// business心跳
-	go timer.NewTimer(25*time.Second, r.pingBusinessWorker).Start()
+	go timer.NewTimer(g.c.PingInterval, g.pingBusinessWorker).Start()
 
 	// 内部Worker通信
-	inner := worker.NewWorker(r.c.InnerAddr, &worker.WorkerEventProxy{
-		ProxyOnConnect: r.onWorkerConnect,
-		ProxyOnMessage: r.onWorkerMessage,
-		ProxyOnClose:   r.onWorkerClose,
+	inner := worker.NewWorker(g.c.InnerAddr, &worker.WorkerEventProxy{
+		ProxyOnConnect: g.onWorkerConnect,
+		ProxyOnMessage: g.onWorkerMessage,
+		ProxyOnClose:   g.onWorkerClose,
 	})
 	go func() {
 		if err := inner.Start(); err != nil {
@@ -63,7 +62,7 @@ func (r *Gateway) OnWorkerStart() {
 	}()
 
 	// 注册地址
-	go r.registerAddress()
+	go g.registerAddress()
 }
 
 func (g *Gateway) OnWorkerStop() {
@@ -123,24 +122,24 @@ func (g *Gateway) registerAddress() {
 
 	var ping *timer.Timer
 
-	c.OnConnect = func(conn *net.TCPConn) {
-		buffer := append((&RegisterMessage{
+	c.OnConnect = func(conn *client.AsyncTcpConnection) {
+		buffer := (&RegisterMessage{
 			Event:       "gateway_connect",
 			Certificate: g.c.Certificate,
 			Address:     g.c.InnerAddr,
-		}).Bytes(), '\n')
+		}).Bytes()
 
-		if _, err := conn.Write(buffer); err != nil {
-			log.Println(err)
+		if err := conn.Send(buffer); err != nil {
+			log.Panic(err)
 		}
 
-		ping = timer.NewTimer(time.Second*25, func() {
-			conn.Write([]byte("{\"event\":\"ping\"}\n"))
+		ping = timer.NewTimer(g.c.PingInterval, func() {
+			conn.Send([]byte("{\"event\":\"ping\"}"))
 		})
 		go ping.Start()
 	}
 
-	c.OnClose = func(conn *net.TCPConn) {
+	c.OnClose = func(conn *client.AsyncTcpConnection) {
 		if ping != nil {
 			ping.Stop()
 		}

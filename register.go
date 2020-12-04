@@ -57,7 +57,7 @@ func (r *Register) OnMessage(conn *worker.Connection, message []byte) {
 			return
 		}
 		log.Printf("新增Gateway %v id: %v \n", conn.RemoteAddr().String(), conn.Id())
-		r.gatewayConnections.Store(conn.Id(), conn.RemoteAddr().String())
+		r.gatewayConnections.Store(conn.Id(), msg.Address)
 		r.broadcastAddresses(nil)
 	case "worker_connect":
 		if msg.Certificate != r.c.Certificate {
