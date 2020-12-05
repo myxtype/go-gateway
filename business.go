@@ -84,7 +84,9 @@ func (b *Business) connectToRegister() {
 		}
 
 		ping = timer.NewTimer(b.c.PingInterval, func() {
-			conn.Send([]byte("{\"event\":\"ping\"}"))
+			conn.Send((&RegisterMessage{
+				Event: "ping",
+			}).Bytes())
 		})
 		go ping.Start()
 	}
@@ -162,6 +164,7 @@ func (b *Business) onGatewayConnect(conn *client.AsyncTcpConnection) {
 	if err := conn.Send((&BusinessMessage{
 		Cmd:  protocol.CMD_WORKER_CONNECT,
 		Body: []byte(b.c.Certificate),
+		ExtData: nil,
 	}).Bytes()); err != nil {
 		logger.Sugar.Error(err)
 	}

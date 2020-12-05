@@ -2,15 +2,16 @@ package gateway
 
 import (
 	"encoding/json"
+	"github.com/myxtype/go-gateway/pkg/logger"
 	"github.com/myxtype/go-gateway/protocol"
 )
 
 type BusinessMessage struct {
-	Cmd     protocol.Protocol `json:"c"`
-	Body    json.RawMessage   `json:"b"`
-	ConnId  string            `json:"ci"`
-	Flag    bool              `json:"f"`
-	ExtData json.RawMessage   `json:"e"`
+	Cmd     protocol.Protocol `json:"cmd,omitempty"`
+	Body    json.RawMessage   `json:"body,omitempty"`
+	ConnId  string            `json:"conn_id,omitempty"`
+	Flag    bool              `json:"flag,omitempty"`
+	ExtData json.RawMessage   `json:"ext_data,omitempty"`
 }
 
 func (bm *BusinessMessage) UnmarshalBody(v interface{}) error {
@@ -22,6 +23,9 @@ func (bm *BusinessMessage) UnmarshalExtData(v interface{}) error {
 }
 
 func (bm *BusinessMessage) Bytes() []byte {
-	b, _ := json.Marshal(bm)
+	b, err := json.Marshal(bm)
+	if err != nil {
+		logger.Sugar.Error(err)
+	}
 	return b
 }
