@@ -12,8 +12,8 @@ type BusinessMessage struct {
 	ConnId  string                 `json:"conn_id,omitempty"`
 	Flag    bool                   `json:"flag,omitempty"`
 	ExtData json.RawMessage        `json:"ext_data,omitempty"`
-	Session map[string]interface{} `json:"session"`
-	Remote  map[string]interface{} `json:"remote"`
+	Session map[string]interface{} `json:"session,omitempty"`
+	Remote  map[string]interface{} `json:"remote,omitempty"`
 }
 
 func (bm *BusinessMessage) UnmarshalBody(v interface{}) error {
