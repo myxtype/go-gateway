@@ -37,10 +37,6 @@ func (c *Connection) RemoteAddr() net.Addr {
 	return c.conn.RemoteAddr()
 }
 
-func (c *Connection) Write(b []byte) (int, error) {
-	return c.conn.Write(b)
-}
-
 func (c *Connection) Send(b []byte) error {
 	_, err := c.conn.Write(append(b, '\n'))
 	return err
