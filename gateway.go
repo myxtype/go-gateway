@@ -339,7 +339,7 @@ func (g *Gateway) onWorkerMessage(conn *worker.Connection, data []byte) {
 				}
 			}
 
-			var uidPools = &MapString{}
+			var uidPools = NewMapString()
 			if v, found = g.uidConnections.Load(uid); found {
 				uidPools = v.(*MapString)
 			} else {
@@ -369,6 +369,22 @@ func (g *Gateway) onWorkerMessage(conn *worker.Connection, data []byte) {
 			}
 		}
 		c.Payload.Delete("uid")
+
+	case protocol.CMD_SEND_TO_UID: // 发送数据给UID
+		var uidArr []string
+		if err := msg.UnmarshalExtData(&uidArr); err != nil {
+			logger.Sugar.Error(err)
+			return
+		}
+		for _, uid := range uidArr {
+			if v, found := g.uidConnections.Load(uid); found {
+				v.(*MapString).Range(func(key string) bool {
+					// todo
+					return true
+				})
+			}
+		}
+
 	default:
 		logger.Sugar.Infof("inner pack err cmd=%v", msg.Cmd)
 	}
