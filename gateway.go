@@ -141,7 +141,7 @@ func (g *Gateway) registerAddress() {
 			logger.Sugar.Panic(err)
 		}
 
-		logger.Sugar.Infof("Gateway: register %v 已连接", g.c.RegisterAddress)
+		logger.Sugar.Infof("register %v connected", g.c.RegisterAddress)
 
 		ping = timer.NewTimer(g.c.PingInterval, func() {
 			conn.Send(PingData)
@@ -153,11 +153,11 @@ func (g *Gateway) registerAddress() {
 		if ping != nil {
 			ping.Stop()
 		}
-		logger.Sugar.Infof("Gateway: register %v 已断开连接", g.c.RegisterAddress)
+		logger.Sugar.Infof("register %v disconnected", g.c.RegisterAddress)
 		// 重新连接
 		time.AfterFunc(2*time.Second, func() {
 			for {
-				logger.Sugar.Infof("Gateway: register %v 正在尝试重新连接", g.c.RegisterAddress)
+				logger.Sugar.Infof("register %v attempting to reconnect", g.c.RegisterAddress)
 
 				if err := c.Connect(); err != nil {
 					logger.Sugar.Error(err)
@@ -177,28 +177,28 @@ func (g *Gateway) registerAddress() {
 
 // onWorkerConnect business连接
 func (g *Gateway) onWorkerConnect(conn *worker.Connection) {
-	logger.Sugar.Infof("Gateway: worker %v 已连接", conn.Id())
+	logger.Sugar.Infof("worker %v connected", conn.Id())
 }
 
 // onWorkerClose business断开
 func (g *Gateway) onWorkerClose(conn *worker.Connection) {
 	g.workerConnections.Delete(conn.Id())
 
-	logger.Sugar.Infof("Gateway: worker %v 已断开连接", conn.Id())
+	logger.Sugar.Infof("worker %v disconnected", conn.Id())
 }
 
 // onWorkerMessage business消息
 func (g *Gateway) onWorkerMessage(conn *worker.Connection, data []byte) {
 	var msg BusinessMessage
 	if err := json.Unmarshal(data, &msg); err != nil {
-		logger.Sugar.Errorf("Gateway: 来自[%v]无效的消息体 %v, Error: %v", conn.Id(), string(data), err.Error())
+		logger.Sugar.Errorf("invalid message body %v, error: %v", conn.Id(), string(data), err.Error())
 		return
 	}
 
 	// 判断否是否认证
 	if _, found := conn.Payload.Load("authorized"); !found {
 		if msg.Cmd != protocol.CMD_WORKER_CONNECT && msg.Cmd != protocol.CMD_GATEWAY_CLIENT_CONNECT {
-			logger.Sugar.Infof("Gateway: Unauthorized request from %v", conn.RemoteAddr().String())
+			logger.Sugar.Infof("unauthorized request from %v", conn.RemoteAddr().String())
 			conn.Close()
 			return
 		}
@@ -207,11 +207,11 @@ func (g *Gateway) onWorkerMessage(conn *worker.Connection, data []byte) {
 	switch msg.Cmd {
 	case protocol.CMD_WORKER_CONNECT:
 		if string(msg.Body) != g.c.Certificate {
-			logger.Sugar.Infof("Gateway: Worker key does not match %s != %v", msg.Body, g.c.Certificate)
+			logger.Sugar.Infof("worker key does not match %s != %v", msg.Body, g.c.Certificate)
 			conn.Close()
 			return
 		}
-		logger.Sugar.Infof("Gateway: Worker %v authorized", conn.Id())
+		logger.Sugar.Infof("worker %v authorized", conn.Id())
 		g.workerConnections.Store(conn.Id(), conn)
 		conn.Payload.Store("authorized", true)
 
@@ -219,7 +219,7 @@ func (g *Gateway) onWorkerMessage(conn *worker.Connection, data []byte) {
 		var certificate string
 		if err := msg.UnmarshalBody(&certificate); err == nil {
 			if certificate != g.c.Certificate {
-				logger.Sugar.Infof("Gateway: GatewayClient key does not match %v != %v", certificate, g.c.Certificate)
+				logger.Sugar.Infof("gateway client key does not match %v != %v", certificate, g.c.Certificate)
 				conn.Close()
 				return
 			}
@@ -244,7 +244,7 @@ func (g *Gateway) onWorkerMessage(conn *worker.Connection, data []byte) {
 	case protocol.CMD_SEND_TO_ALL:
 
 	default:
-		logger.Sugar.Infof("Gateway: inner pack err cmd=%v", msg.Cmd)
+		logger.Sugar.Infof("inner pack err cmd=%v", msg.Cmd)
 	}
 }
 

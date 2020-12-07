@@ -39,7 +39,7 @@ func (r *Register) OnWorkerStart() {}
 func (r *Register) OnWorkerStop() {}
 
 func (r *Register) OnConnect(conn *worker.Connection) {
-	logger.Sugar.Infof("已连接 %v id: %v", conn.RemoteAddr().String(), conn.Id())
+	logger.Sugar.Infof("connected %v id: %v", conn.RemoteAddr().String(), conn.Id())
 }
 
 func (r *Register) OnMessage(conn *worker.Connection, message []byte) {
@@ -56,7 +56,7 @@ func (r *Register) OnMessage(conn *worker.Connection, message []byte) {
 			conn.Close()
 			return
 		}
-		logger.Sugar.Infof("新增Gateway %v id: %v", conn.RemoteAddr().String(), conn.Id())
+		logger.Sugar.Infof("new gateway %v id: %v", conn.RemoteAddr().String(), conn.Id())
 		r.gatewayConnections.Store(conn.Id(), msg.Address)
 		r.broadcastAddresses(nil)
 	case "worker_connect":
@@ -65,11 +65,11 @@ func (r *Register) OnMessage(conn *worker.Connection, message []byte) {
 			conn.Close()
 			return
 		}
-		logger.Sugar.Infof("新增Worker %v id: %v", conn.RemoteAddr().String(), conn.Id())
+		logger.Sugar.Infof("new worker %v id: %v", conn.RemoteAddr().String(), conn.Id())
 		r.workerConnections.Store(conn.Id(), conn)
 		r.broadcastAddresses(conn)
 	case "ping":
-		logger.Sugar.Infof("Ping %v id: %v", conn.RemoteAddr().String(), conn.Id())
+		logger.Sugar.Infof("ping from %v id: %v", conn.RemoteAddr().String(), conn.Id())
 	default:
 		conn.Close()
 		return
@@ -77,7 +77,7 @@ func (r *Register) OnMessage(conn *worker.Connection, message []byte) {
 }
 
 func (r *Register) OnClose(conn *worker.Connection) {
-	logger.Sugar.Infof("已断开连接 %v id: %v", conn.RemoteAddr().String(), conn.Id())
+	logger.Sugar.Infof("disconnected from %v id: %v", conn.RemoteAddr().String(), conn.Id())
 
 	if _, found := r.gatewayConnections.Load(conn.Id()); found {
 		r.gatewayConnections.Delete(conn.Id())

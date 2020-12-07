@@ -57,7 +57,7 @@ func (b *Business) connectToRegister() {
 			logger.Sugar.Panic(err)
 		}
 
-		logger.Sugar.Infof("Business: register %v 已连接", b.c.RegisterAddress)
+		logger.Sugar.Infof("register %v connected", b.c.RegisterAddress)
 
 		ping = timer.NewTimer(b.c.PingInterval, func() {
 			conn.Send(PingData)
@@ -69,11 +69,11 @@ func (b *Business) connectToRegister() {
 		if ping != nil {
 			ping.Stop()
 		}
-		logger.Sugar.Infof("Business: register %v 已断开连接", b.c.RegisterAddress)
+		logger.Sugar.Infof("register %v disconnected", b.c.RegisterAddress)
 		// 重新连接
 		time.AfterFunc(2*time.Second, func() {
 			for {
-				logger.Sugar.Infof("Business: register %v 正在尝试重新连接", b.c.RegisterAddress)
+				logger.Sugar.Infof("register %v attempting to reconnect", b.c.RegisterAddress)
 
 				if err := c.Connect(); err != nil {
 					logger.Sugar.Error(err)
@@ -101,7 +101,7 @@ func (b *Business) onRegisterConnectionMessage(conn *client.AsyncTcpConnection, 
 	switch msg.Event {
 	case "broadcast_addresses":
 		if len(msg.Addresses) == 0 {
-			logger.Sugar.Info("Business: Received bad data from Register. Addresses empty")
+			logger.Sugar.Info("received bad data from register. addresses empty")
 			return
 		}
 
@@ -113,7 +113,7 @@ func (b *Business) onRegisterConnectionMessage(conn *client.AsyncTcpConnection, 
 
 		b.checkGatewayConnections(msg.Addresses)
 	default:
-		logger.Sugar.Infof("Business: Receive bad event:%v from Register. \n", msg.Event)
+		logger.Sugar.Infof("receive bad event: %v from register.", msg.Event)
 	}
 }
 
@@ -128,7 +128,7 @@ func (b *Business) tryToConnectGateway(addr string) {
 	_, isIn := b.gatewayAddresses[addr]
 
 	if _, found := b.gatewayConnections.Load(addr); !found && !isConnecting && isIn {
-		logger.Sugar.Infof("Business: 尝试连接gateway %v", addr)
+		logger.Sugar.Infof("try to connect to gateway %v", addr)
 
 		conn := client.NewAsyncTcpConnection(addr)
 
@@ -160,7 +160,7 @@ func (b *Business) onGatewayConnect(conn *client.AsyncTcpConnection) {
 	delete(b.connectingGatewayAddresses, addr)
 	delete(b.waitingConnectGatewayAddresses, addr)
 
-	logger.Sugar.Infof("Business: gateway %v 已连接", addr)
+	logger.Sugar.Infof("gateway %v connected", addr)
 }
 
 func (b *Business) onGatewayClose(conn *client.AsyncTcpConnection) {
@@ -174,7 +174,7 @@ func (b *Business) onGatewayClose(conn *client.AsyncTcpConnection) {
 		}
 	}
 
-	logger.Sugar.Infof("Business: gateway %v 已断开连接", addr)
+	logger.Sugar.Infof("gateway %v disconnected", addr)
 }
 
 func (b *Business) onGatewayMessage(conn *client.AsyncTcpConnection, data []byte) {
@@ -194,6 +194,6 @@ func (b *Business) onGatewayMessage(conn *client.AsyncTcpConnection, data []byte
 	case protocol.CMD_PING:
 
 	default:
-		logger.Sugar.Warnf("Business: unknown cmd: %v", msg.Cmd)
+		logger.Sugar.Warnf("unknown gateway message cmd: %v", msg.Cmd)
 	}
 }

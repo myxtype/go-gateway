@@ -52,12 +52,13 @@ func (w *Worker) Start() error {
 }
 
 func (w *Worker) tcpPipe(conn *net.TCPConn) {
+	connection := NewConnection(conn)
+
 	defer func() {
 		conn.Close()
 		atomic.AddInt64(&w.connected, -1)
+		w.handler.OnClose(connection)
 	}()
-
-	connection := NewConnection(conn)
 
 	atomic.AddInt64(&w.connected, 1)
 	// 超过最大连接数
@@ -70,10 +71,12 @@ func (w *Worker) tcpPipe(conn *net.TCPConn) {
 	reader := bufio.NewReader(conn)
 	for {
 		message, err := reader.ReadBytes('\n')
-		if err != nil || err == io.EOF {
+		if err == io.EOF {
+			return
+		}
+		if err != nil {
 			break
 		}
 		w.handler.OnMessage(connection, message)
 	}
-	w.handler.OnClose(connection)
 }
