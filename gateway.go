@@ -6,6 +6,7 @@ import (
 	"github.com/myxtype/go-gateway/client"
 	"github.com/myxtype/go-gateway/pkg/logger"
 	"github.com/myxtype/go-gateway/pkg/timer"
+	"github.com/myxtype/go-gateway/pkg/types"
 	"github.com/myxtype/go-gateway/protocol"
 	"github.com/myxtype/go-gateway/worker"
 	"sync"
@@ -99,7 +100,7 @@ func (g *Gateway) OnClose(conn *worker.Connection) {
 	if v, found := conn.Payload.Load("uid"); found {
 		uid := v.(string)
 		if v, found = g.uidConnections.Load(uid); found {
-			uidPools := v.(*MapString)
+			uidPools := v.(*types.MapString)
 			uidPools.Delete(conn.Id())
 
 			if uidPools.Length() == 0 {
@@ -113,7 +114,7 @@ func (g *Gateway) OnClose(conn *worker.Connection) {
 		groups := v.([]string)
 		for _, groupName := range groups {
 			if v, found = g.groupConnections.Load(groupName); found {
-				group := v.(*MapString)
+				group := v.(*types.MapString)
 				group.Delete(conn.Id())
 
 				if group.Length() == 0 {
@@ -331,7 +332,7 @@ func (g *Gateway) onWorkerMessage(conn *worker.Connection, data []byte) {
 			// 此连接已绑定过UID
 			if v, found = c.Payload.Load("uid"); found {
 				if v, found = g.uidConnections.Load(v.(string)); found {
-					uidPools := v.(*MapString)
+					uidPools := v.(*types.MapString)
 					uidPools.Delete(msg.ConnId)
 					if uidPools.Length() == 0 {
 						g.uidConnections.Delete(v.(string))
@@ -339,9 +340,9 @@ func (g *Gateway) onWorkerMessage(conn *worker.Connection, data []byte) {
 				}
 			}
 
-			var uidPools = NewMapString()
+			var uidPools = types.NewMapString()
 			if v, found = g.uidConnections.Load(uid); found {
-				uidPools = v.(*MapString)
+				uidPools = v.(*types.MapString)
 			} else {
 				g.uidConnections.Store(uid, uidPools)
 			}
@@ -362,7 +363,7 @@ func (g *Gateway) onWorkerMessage(conn *worker.Connection, data []byte) {
 		}
 		uid := v.(string)
 		if v, found = g.uidConnections.Load(uid); found {
-			uidPools := v.(*MapString)
+			uidPools := v.(*types.MapString)
 			uidPools.Delete(msg.ConnId)
 			if uidPools.Length() == 0 {
 				g.uidConnections.Delete(uid)
@@ -378,8 +379,10 @@ func (g *Gateway) onWorkerMessage(conn *worker.Connection, data []byte) {
 		}
 		for _, uid := range uidArr {
 			if v, found := g.uidConnections.Load(uid); found {
-				v.(*MapString).Range(func(key string) bool {
-					// todo
+				v.(*types.MapString).Range(func(key string) bool {
+					if v, found := g.clientConnections.Load(key); found {
+						v.(*worker.Connection).Send(msg.Body)
+					}
 					return true
 				})
 			}

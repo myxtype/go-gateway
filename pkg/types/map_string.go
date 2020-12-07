@@ -1,8 +1,7 @@
-package gateway
+package types
 
 type MapString struct {
 	data map[string]struct{}
-	l    int64
 }
 
 func NewMapString() *MapString {
@@ -24,9 +23,8 @@ func (m *MapString) Length() int {
 
 func (m *MapString) Range(f func(key string) bool) {
 	for key := range m.data {
-		if f(key) {
-			continue
+		if !f(key) {
+			break
 		}
-		break
 	}
 }
