@@ -21,10 +21,11 @@ func NewTimer(d time.Duration, f func()) *Timer {
 
 func (t *Timer) Start() {
 	t.ctx, t.cancel = context.WithCancel(context.Background())
+	tik := time.NewTicker(t.d)
 
 	for {
 		select {
-		case <-time.NewTicker(t.d).C:
+		case <-tik.C:
 			t.f()
 		case <-t.ctx.Done():
 			return
