@@ -141,6 +141,8 @@ func (g *Gateway) registerAddress() {
 			logger.Sugar.Panic(err)
 		}
 
+		logger.Sugar.Infof("register %v 已连接", g.c.RegisterAddress)
+
 		ping = timer.NewTimer(g.c.PingInterval, func() {
 			conn.Send(PingData)
 		})
@@ -151,7 +153,21 @@ func (g *Gateway) registerAddress() {
 		if ping != nil {
 			ping.Stop()
 		}
-		// todo
+		logger.Sugar.Infof("register %v 已断开连接", g.c.RegisterAddress)
+		// 重新连接
+		time.AfterFunc(2*time.Second, func() {
+			for {
+				logger.Sugar.Infof("register %v 正在尝试重新连接", g.c.RegisterAddress)
+
+				if err := c.Connect(); err != nil {
+					logger.Sugar.Error(err)
+					time.Sleep(2 * time.Second)
+					continue
+				}
+
+				break
+			}
+		})
 	}
 
 	if err := c.Connect(); err != nil {

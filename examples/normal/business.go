@@ -31,4 +31,6 @@ func main() {
 	if err := b.Start(); err != nil {
 		panic(err)
 	}
+
+	select {}
 }

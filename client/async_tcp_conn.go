@@ -55,7 +55,9 @@ func (tc *AsyncTcpConnection) onMessageReceived() {
 	reader := bufio.NewReader(tc.conn)
 	for {
 		msg, err := reader.ReadBytes('\n')
-		if err != nil || err == io.EOF {
+		if err == io.EOF {
+			return
+		} else if err != nil {
 			break
 		}
 
