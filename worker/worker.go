@@ -47,12 +47,6 @@ func (w *Worker) Start() error {
 			continue
 		}
 
-		// 超过最大连接数
-		if w.c.MaxConn > 0 && w.connected > w.c.MaxConn {
-			tcpConn.Close()
-			continue
-		}
-
 		go w.tcpPipe(tcpConn)
 	}
 }
@@ -64,7 +58,13 @@ func (w *Worker) tcpPipe(conn *net.TCPConn) {
 	}()
 
 	connection := NewConnection(conn)
+
 	atomic.AddInt64(&w.connected, 1)
+	// 超过最大连接数
+	if w.c.MaxConn > 0 && w.connected > w.c.MaxConn {
+		return
+	}
+
 	w.handler.OnConnect(connection)
 
 	reader := bufio.NewReader(conn)
