@@ -9,9 +9,9 @@ import (
 type GatewayMessage struct {
 	Cmd     protocol.Protocol      `json:"cmd,omitempty"`
 	Body    json.RawMessage        `json:"body,omitempty"`
+	ExtData json.RawMessage        `json:"ext_data,omitempty"`
 	ConnId  string                 `json:"conn_id,omitempty"`
 	Flag    bool                   `json:"flag,omitempty"`
-	ExtData json.RawMessage        `json:"ext_data,omitempty"`
 	Session map[string]interface{} `json:"session,omitempty"`
 	Remote  map[string]interface{} `json:"remote,omitempty"`
 }
