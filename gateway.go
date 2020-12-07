@@ -98,8 +98,8 @@ func (g *Gateway) OnClose(conn *worker.Connection) {
 	// 清理 uid
 	if v, found := conn.Payload.Load("uid"); found {
 		uid := v.(string)
-		if vv, found := g.uidConnections.Load(uid); found {
-			uidPools := vv.(*MapString)
+		if v, found = g.uidConnections.Load(uid); found {
+			uidPools := v.(*MapString)
 			uidPools.Delete(conn.Id())
 
 			if uidPools.Length() == 0 {
@@ -112,8 +112,8 @@ func (g *Gateway) OnClose(conn *worker.Connection) {
 	if v, found := conn.Payload.Load("groups"); found {
 		groups := v.([]string)
 		for _, groupName := range groups {
-			if vv, found := g.groupConnections.Load(groupName); found {
-				group := vv.(*MapString)
+			if v, found = g.groupConnections.Load(groupName); found {
+				group := v.(*MapString)
 				group.Delete(conn.Id())
 
 				if group.Length() == 0 {
@@ -300,6 +300,75 @@ func (g *Gateway) onWorkerMessage(conn *worker.Connection, data []byte) {
 			logger.Sugar.Error(err)
 		}
 
+	case protocol.CMD_GET_ALL_CLIENT_SESSIONS: // 获取所有Session
+		var sessions = map[string]map[string]interface{}{}
+		g.clientConnections.Range(func(key, value interface{}) bool {
+			if v, found := value.(*worker.Connection).Payload.Load("session"); found {
+				sessions[key.(string)] = v.(map[string]interface{})
+			}
+			return true
+		})
+		if err := conn.SendJson(sessions); err != nil {
+			logger.Sugar.Error(err)
+		}
+
+	case protocol.CMD_IS_ONLINE: // 判断是否在线
+		var isOnline = "0"
+		if _, found := g.clientConnections.Load(msg.ConnId); found {
+			isOnline = "1"
+		}
+		conn.Send([]byte(isOnline))
+
+	case protocol.CMD_BIND_UID: // 将clientId与Uid进行绑定
+		var uid string
+		if err := msg.UnmarshalExtData(&uid); err != nil {
+			logger.Sugar.Error(err)
+			return
+		}
+		if v, found := g.clientConnections.Load(msg.ConnId); found {
+			c := v.(*worker.Connection)
+
+			// 此连接已绑定过UID
+			if v, found = c.Payload.Load("uid"); found {
+				if v, found = g.uidConnections.Load(v.(string)); found {
+					uidPools := v.(*MapString)
+					uidPools.Delete(msg.ConnId)
+					if uidPools.Length() == 0 {
+						g.uidConnections.Delete(v.(string))
+					}
+				}
+			}
+
+			var uidPools = &MapString{}
+			if v, found = g.uidConnections.Load(uid); found {
+				uidPools = v.(*MapString)
+			} else {
+				g.uidConnections.Store(uid, uidPools)
+			}
+
+			c.Payload.Store("uid", uid)
+			uidPools.Load(msg.ConnId)
+		}
+
+	case protocol.CMD_UNBIND_UID: // 将clientId与Uid解除绑定
+		v, found := g.clientConnections.Load(msg.ConnId)
+		if !found {
+			return
+		}
+		c := v.(*worker.Connection)
+		v, found = c.Payload.Load("uid")
+		if !found {
+			return
+		}
+		uid := v.(string)
+		if v, found = g.uidConnections.Load(uid); found {
+			uidPools := v.(*MapString)
+			uidPools.Delete(msg.ConnId)
+			if uidPools.Length() == 0 {
+				g.uidConnections.Delete(uid)
+			}
+		}
+		c.Payload.Delete("uid")
 	default:
 		logger.Sugar.Infof("inner pack err cmd=%v", msg.Cmd)
 	}
