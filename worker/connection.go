@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"encoding/json"
 	"github.com/twinj/uuid"
 	"net"
 	"sync"
@@ -44,4 +45,12 @@ func (c *Connection) LocalAddr() net.Addr {
 func (c *Connection) Send(b []byte) error {
 	_, err := c.conn.Write(append(b, '\n'))
 	return err
+}
+
+func (c *Connection) SendJson(v interface{}) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	return c.Send(b)
 }

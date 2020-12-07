@@ -11,7 +11,6 @@ type GatewayMessage struct {
 	Body    json.RawMessage        `json:"body,omitempty"`
 	ExtData json.RawMessage        `json:"ext_data,omitempty"`
 	ConnId  string                 `json:"conn_id,omitempty"`
-	Flag    bool                   `json:"flag,omitempty"`
 	Session map[string]interface{} `json:"session,omitempty"`
 	Remote  map[string]interface{} `json:"remote,omitempty"`
 }

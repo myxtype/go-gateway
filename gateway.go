@@ -226,22 +226,79 @@ func (g *Gateway) onWorkerMessage(conn *worker.Connection, data []byte) {
 			conn.Payload.Store("authorized", true)
 		}
 
-	case protocol.CMD_SEND_TO_ONE:
+	case protocol.CMD_SEND_TO_ONE: // 给一个客户端发送数据
 		if v, found := g.clientConnections.Load(msg.ConnId); found {
 			v.(*worker.Connection).Send(msg.Body)
 		}
 
-	case protocol.CMD_KICK:
+	case protocol.CMD_KICK: // 踢出
 		if v, found := g.clientConnections.Load(msg.ConnId); found {
 			v.(*worker.Connection).Close()
 		}
 
-	case protocol.CMD_DESTROY:
+	case protocol.CMD_DESTROY: // 销毁
 		if v, found := g.clientConnections.Load(msg.ConnId); found {
 			v.(*worker.Connection).Close()
 		}
 
-	case protocol.CMD_SEND_TO_ALL:
+	case protocol.CMD_SEND_TO_ALL: // 广播
+		var connIds []string
+		if err := msg.UnmarshalExtData(&connIds); err != nil {
+			logger.Sugar.Error(err)
+			return
+		}
+
+		if len(connIds) > 0 {
+			for _, connId := range connIds {
+				if v, found := g.clientConnections.Load(connId); found {
+					v.(*worker.Connection).Send(msg.Body)
+				}
+			}
+		} else {
+			g.clientConnections.Range(func(key, v interface{}) bool {
+				v.(*worker.Connection).Send(msg.Body)
+				return true
+			})
+		}
+
+	case protocol.CMD_GET_GROUP_ID_LIST: // 获取在线群组列表
+		var groups []string
+		g.groupConnections.Range(func(key, value interface{}) bool {
+			groups = append(groups, key.(string))
+			return true
+		})
+		if err := conn.SendJson(groups); err != nil {
+			logger.Sugar.Error(err)
+		}
+
+	case protocol.CMD_SET_SESSION: // 设置SESSION
+		if v, found := g.clientConnections.Load(msg.ConnId); found {
+			v.(*worker.Connection).Payload.Store("session", msg.Session)
+		}
+
+	case protocol.CMD_UPDATE_SESSION: // 合并SESSION
+		if v, found := g.clientConnections.Load(msg.ConnId); found {
+			c := v.(*worker.Connection)
+			var old = map[string]interface{}{}
+			if v, found = c.Payload.Load("session"); found {
+				old = v.(map[string]interface{})
+			}
+			for key, val := range msg.Session {
+				old[key] = val
+			}
+			c.Payload.Store("session", old)
+		}
+
+	case protocol.CMD_GET_SESSION_BY_CLIENT_ID: // 通过ClientId获取Session
+		var session = map[string]interface{}{}
+		if v, found := g.clientConnections.Load(msg.ConnId); found {
+			if v, found = v.(*worker.Connection).Payload.Load("session"); found {
+				session = v.(map[string]interface{})
+			}
+		}
+		if err := conn.SendJson(session); err != nil {
+			logger.Sugar.Error(err)
+		}
 
 	default:
 		logger.Sugar.Infof("inner pack err cmd=%v", msg.Cmd)
