@@ -59,9 +59,7 @@ func (b *Business) connectToRegister() {
 		}
 
 		ping = timer.NewTimer(b.c.PingInterval, func() {
-			conn.Send((&RegisterMessage{
-				Event: "ping",
-			}).Bytes())
+			conn.Send(PingData)
 		})
 		go ping.Start()
 	}
@@ -178,6 +176,8 @@ func (b *Business) onGatewayMessage(conn *client.AsyncTcpConnection, data []byte
 		b.handler.OnMessage(msg.ConnId, NewBusinessEventsMessage(&msg))
 	case protocol.CMD_ON_CLOSE:
 		b.handler.OnClose(msg.ConnId)
+	case protocol.CMD_PING:
+
 	default:
 		logger.Sugar.Warnf("Unknown cmd: %v", msg.Cmd)
 	}

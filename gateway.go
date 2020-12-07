@@ -142,7 +142,7 @@ func (g *Gateway) registerAddress() {
 		}
 
 		ping = timer.NewTimer(g.c.PingInterval, func() {
-			conn.Send([]byte("{\"event\":\"ping\"}"))
+			conn.Send(PingData)
 		})
 		go ping.Start()
 	}
@@ -190,17 +190,14 @@ func (g *Gateway) onWorkerMessage(conn *worker.Connection, data []byte) {
 
 	switch msg.Cmd {
 	case protocol.CMD_WORKER_CONNECT:
-		var certificate string
-		if err := msg.UnmarshalBody(&certificate); err == nil {
-			if certificate != g.c.Certificate {
-				logger.Sugar.Infof("Gateway: Worker key does not match %v != %v", certificate, g.c.Certificate)
-				conn.Close()
-				return
-			}
-			logger.Sugar.Infof("Gateway: Worker %v authorized", conn.Id())
-			g.workerConnections.Store(conn.Id(), conn)
-			conn.Payload.Store("authorized", true)
+		if string(msg.Body) != g.c.Certificate {
+			logger.Sugar.Infof("Gateway: Worker key does not match %s != %v", msg.Body, g.c.Certificate)
+			conn.Close()
+			return
 		}
+		logger.Sugar.Infof("Gateway: Worker %v authorized", conn.Id())
+		g.workerConnections.Store(conn.Id(), conn)
+		conn.Payload.Store("authorized", true)
 
 	case protocol.CMD_GATEWAY_CLIENT_CONNECT:
 		var certificate string
