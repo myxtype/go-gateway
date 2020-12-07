@@ -189,7 +189,7 @@ func (g *Gateway) onWorkerMessage(conn *worker.Connection, data []byte) {
 	}
 
 	switch msg.Cmd {
-	case protocol.CMD_WORKER_CONNECT: // BusinessWorker连接Gateway
+	case protocol.CMD_WORKER_CONNECT:
 		var certificate string
 		if err := msg.UnmarshalBody(&certificate); err == nil {
 			if certificate != g.c.Certificate {
@@ -202,7 +202,7 @@ func (g *Gateway) onWorkerMessage(conn *worker.Connection, data []byte) {
 			conn.Payload.Store("authorized", true)
 		}
 
-	case protocol.CMD_GATEWAY_CLIENT_CONNECT: // GatewayClient连接Gateway
+	case protocol.CMD_GATEWAY_CLIENT_CONNECT:
 		var certificate string
 		if err := msg.UnmarshalBody(&certificate); err == nil {
 			if certificate != g.c.Certificate {
@@ -213,10 +213,22 @@ func (g *Gateway) onWorkerMessage(conn *worker.Connection, data []byte) {
 			conn.Payload.Store("authorized", true)
 		}
 
-	case protocol.CMD_SEND_TO_ONE: // 向某客户端发送数据，Gateway::sendToClient($client_id, $message);
+	case protocol.CMD_SEND_TO_ONE:
 		if v, found := g.clientConnections.Load(msg.ConnId); found {
 			v.(*worker.Connection).Write(append(msg.Body, '\n'))
 		}
+
+	case protocol.CMD_KICK:
+		if v, found := g.clientConnections.Load(msg.ConnId); found {
+			v.(*worker.Connection).Close()
+		}
+
+	case protocol.CMD_DESTROY:
+		if v, found := g.clientConnections.Load(msg.ConnId); found {
+			v.(*worker.Connection).Close()
+		}
+
+	case protocol.CMD_SEND_TO_ALL:
 
 	default:
 		logger.Sugar.Infof("Gateway inner pack err cmd=%v", msg.Cmd)

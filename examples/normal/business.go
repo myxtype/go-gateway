@@ -5,8 +5,15 @@ import (
 	"time"
 )
 
+type BusinessHandler struct {
+}
+
+func (h *BusinessHandler) OnConnect(connId string)                                     {}
+func (h *BusinessHandler) OnMessage(connId string, msg *gateway.BusinessEventsMessage) {}
+func (h *BusinessHandler) OnClose(connId string)                                       {}
+
 func main() {
-	b := gateway.NewBusiness(&gateway.BusinessConfig{
+	b := gateway.NewBusiness(&BusinessHandler{}, &gateway.BusinessConfig{
 		Addr:            "127.0.0.1:1999",
 		RegisterAddress: "127.0.0.1:1234",
 		PingInterval:    25 * time.Second,
