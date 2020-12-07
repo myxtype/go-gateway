@@ -5,15 +5,19 @@ import (
 	"io"
 	"log"
 	"net"
+	"sync/atomic"
 )
 
 type Worker struct {
 	c       *WorkerConfig
 	handler WorkerEventInterface
+
+	connected int64
 }
 
 type WorkerConfig struct {
-	Addr string
+	Addr    string
+	MaxConn int64
 }
 
 func NewWorker(handler WorkerEventInterface, conf *WorkerConfig) *Worker {
@@ -42,6 +46,13 @@ func (w *Worker) Start() error {
 			log.Println(err)
 			continue
 		}
+
+		// 超过最大连接数
+		if w.c.MaxConn > 0 && w.connected > w.c.MaxConn {
+			tcpConn.Close()
+			continue
+		}
+
 		go w.tcpPipe(tcpConn)
 	}
 }
@@ -49,9 +60,11 @@ func (w *Worker) Start() error {
 func (w *Worker) tcpPipe(conn *net.TCPConn) {
 	defer func() {
 		conn.Close()
+		atomic.AddInt64(&w.connected, -1)
 	}()
 
 	connection := NewConnection(conn)
+	atomic.AddInt64(&w.connected, 1)
 	w.handler.OnConnect(connection)
 
 	reader := bufio.NewReader(conn)
