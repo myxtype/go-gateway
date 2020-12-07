@@ -212,7 +212,7 @@ func (g *Gateway) onWorkerMessage(conn *worker.Connection, data []byte) {
 
 	case protocol.CMD_SEND_TO_ONE:
 		if v, found := g.clientConnections.Load(msg.ConnId); found {
-			v.(*worker.Connection).Write(append(msg.Body, '\n'))
+			v.(*worker.Connection).Send(msg.Body)
 		}
 
 	case protocol.CMD_KICK:

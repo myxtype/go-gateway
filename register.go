@@ -96,19 +96,22 @@ func (r *Register) broadcastAddresses(conn *worker.Connection) {
 		return true
 	})
 
-	msg := &RegisterMessage{
+	msg := (&RegisterMessage{
 		Event:     "broadcast_addresses",
 		Addresses: addresses,
-	}
-	buffer := append(msg.Bytes(), '\n')
+	}).Bytes()
 
 	if conn != nil {
-		conn.Write(buffer)
+		if err := conn.Send(msg); err != nil {
+			logger.Sugar.Error(err)
+		}
 		return
 	}
 
 	r.workerConnections.Range(func(key, value interface{}) bool {
-		value.(*worker.Connection).Write(buffer)
+		if err := value.(*worker.Connection).Send(msg); err != nil {
+			logger.Sugar.Error(err)
+		}
 		return true
 	})
 }
