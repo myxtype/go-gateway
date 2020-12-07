@@ -38,9 +38,8 @@ func NewBusiness(handler BusinessEventsInterface, conf *BusinessConfig) *Busines
 	}
 }
 
-func (b *Business) Start() error {
+func (b *Business) Start() {
 	go b.connectToRegister()
-	return nil
 }
 
 func (b *Business) connectToRegister() {

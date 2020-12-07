@@ -28,9 +28,7 @@ func main() {
 		Certificate:     "",
 	})
 
-	if err := b.Start(); err != nil {
-		panic(err)
-	}
+	b.Start()
 
 	select {}
 }
