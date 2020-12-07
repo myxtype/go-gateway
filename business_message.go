@@ -7,11 +7,13 @@ import (
 )
 
 type BusinessMessage struct {
-	Cmd     protocol.Protocol `json:"cmd,omitempty"`
-	Body    json.RawMessage   `json:"body,omitempty"`
-	ConnId  string            `json:"conn_id,omitempty"`
-	Flag    bool              `json:"flag,omitempty"`
-	ExtData json.RawMessage   `json:"ext_data,omitempty"`
+	Cmd     protocol.Protocol      `json:"cmd,omitempty"`
+	Body    json.RawMessage        `json:"body,omitempty"`
+	ConnId  string                 `json:"conn_id,omitempty"`
+	Flag    bool                   `json:"flag,omitempty"`
+	ExtData json.RawMessage        `json:"ext_data,omitempty"`
+	Session map[string]interface{} `json:"session"`
+	Remote  map[string]interface{} `json:"remote"`
 }
 
 func (bm *BusinessMessage) UnmarshalBody(v interface{}) error {

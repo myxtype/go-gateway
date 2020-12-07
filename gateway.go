@@ -231,15 +231,15 @@ func (g *Gateway) sendToWorker(cmd protocol.Protocol, conn *worker.Connection, d
 		return
 	}
 
-	var session = map[string]interface{}{}
-	if v, found := conn.Payload.Load("session"); found {
-		session = v.(map[string]interface{})
-	}
-	b, _ := json.Marshal(session)
 	msg := &BusinessMessage{
-		Cmd:     cmd,
-		Body:    data,
-		ExtData: b,
+		Cmd:  cmd,
+		Body: data,
+	}
+	if v, found := conn.Payload.Load("session"); found {
+		msg.Session = v.(map[string]interface{})
+	}
+	if v, found := conn.Payload.Load("remote"); found {
+		msg.Remote = v.(map[string]interface{})
 	}
 
 	if err := workerConn.Send(msg.Bytes()); err != nil {

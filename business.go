@@ -203,11 +203,7 @@ func (b *Business) onGatewayMessage(conn *client.AsyncTcpConnection, data []byte
 	case protocol.CMD_ON_CONNECT:
 		b.handler.OnConnect(msg.ConnId)
 	case protocol.CMD_ON_MESSAGE:
-		if bem, err := NewBusinessEventsMessage(&msg); err == nil {
-			b.handler.OnMessage(msg.ConnId, bem)
-		} else {
-			logger.Sugar.Error(err)
-		}
+		b.handler.OnMessage(msg.ConnId, NewBusinessEventsMessage(&msg))
 	case protocol.CMD_ON_CLOSE:
 		b.handler.OnClose(msg.ConnId)
 	default:
