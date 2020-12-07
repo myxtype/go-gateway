@@ -8,16 +8,20 @@ import (
 )
 
 type Worker struct {
-	addr    string
+	c       *WorkerConfig
 	handler WorkerEventInterface
 }
 
-func NewWorker(addr string, handler WorkerEventInterface) *Worker {
-	return &Worker{addr: addr, handler: handler}
+type WorkerConfig struct {
+	Addr string
+}
+
+func NewWorker(handler WorkerEventInterface, conf *WorkerConfig) *Worker {
+	return &Worker{c: conf, handler: handler}
 }
 
 func (w *Worker) Start() error {
-	netAddr, err := net.ResolveTCPAddr("tcp", w.addr)
+	netAddr, err := net.ResolveTCPAddr("tcp", w.c.Addr)
 	if err != nil {
 		return err
 	}

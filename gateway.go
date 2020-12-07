@@ -35,7 +35,7 @@ func NewGateway(conf *GatewayConfig) *Gateway {
 }
 
 func (g *Gateway) Start() error {
-	w := worker.NewWorker(g.c.Addr, g)
+	w := worker.NewWorker(g, &worker.WorkerConfig{Addr: g.c.Addr})
 
 	if err := w.Start(); err != nil {
 		return err
@@ -50,11 +50,11 @@ func (g *Gateway) OnWorkerStart() {
 	go timer.NewTimer(g.c.PingInterval, g.pingBusinessWorker).Start()
 
 	// 内部Worker通信
-	inner := worker.NewWorker(g.c.InnerAddr, &worker.WorkerEventProxy{
+	inner := worker.NewWorker(&worker.WorkerEventProxy{
 		ProxyOnConnect: g.onWorkerConnect,
 		ProxyOnMessage: g.onWorkerMessage,
 		ProxyOnClose:   g.onWorkerClose,
-	})
+	}, &worker.WorkerConfig{Addr: g.c.InnerAddr})
 	go func() {
 		if err := inner.Start(); err != nil {
 			logger.Sugar.Panic(err)

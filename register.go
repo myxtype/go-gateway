@@ -26,7 +26,7 @@ func NewRegister(conf *RegisterConfig) *Register {
 }
 
 func (r *Register) Start() error {
-	w := worker.NewWorker(r.c.Addr, r)
+	w := worker.NewWorker(r, &worker.WorkerConfig{Addr: r.c.Addr})
 
 	if err := w.Start(); err != nil {
 		return err
