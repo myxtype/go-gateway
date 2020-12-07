@@ -149,7 +149,7 @@ func (b *Business) onGatewayConnect(conn *client.AsyncTcpConnection) {
 	b.gatewayConnections.Store(addr, conn)
 
 	// 发送认证
-	if err := conn.Send((&BusinessMessage{
+	if err := conn.Send((&GatewayMessage{
 		Cmd:     protocol.CMD_WORKER_CONNECT,
 		Body:    []byte(b.c.Certificate),
 		ExtData: nil,
@@ -178,7 +178,7 @@ func (b *Business) onGatewayClose(conn *client.AsyncTcpConnection) {
 }
 
 func (b *Business) onGatewayMessage(conn *client.AsyncTcpConnection, data []byte) {
-	var msg BusinessMessage
+	var msg GatewayMessage
 	if err := json.Unmarshal(data, &msg); err != nil {
 		logger.Sugar.Error(err)
 		return

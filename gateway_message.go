@@ -6,7 +6,7 @@ import (
 	"github.com/myxtype/go-gateway/protocol"
 )
 
-type BusinessMessage struct {
+type GatewayMessage struct {
 	Cmd     protocol.Protocol      `json:"cmd,omitempty"`
 	Body    json.RawMessage        `json:"body,omitempty"`
 	ConnId  string                 `json:"conn_id,omitempty"`
@@ -16,16 +16,16 @@ type BusinessMessage struct {
 	Remote  map[string]interface{} `json:"remote,omitempty"`
 }
 
-func (bm *BusinessMessage) UnmarshalBody(v interface{}) error {
-	return json.Unmarshal(bm.Body, v)
+func (m *GatewayMessage) UnmarshalBody(v interface{}) error {
+	return json.Unmarshal(m.Body, v)
 }
 
-func (bm *BusinessMessage) UnmarshalExtData(v interface{}) error {
-	return json.Unmarshal(bm.ExtData, v)
+func (m *GatewayMessage) UnmarshalExtData(v interface{}) error {
+	return json.Unmarshal(m.ExtData, v)
 }
 
-func (bm *BusinessMessage) Bytes() []byte {
-	b, err := json.Marshal(bm)
+func (m *GatewayMessage) Bytes() []byte {
+	b, err := json.Marshal(m)
 	if err != nil {
 		logger.Sugar.Error(err)
 	}

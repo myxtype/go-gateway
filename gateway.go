@@ -189,7 +189,7 @@ func (g *Gateway) onWorkerClose(conn *worker.Connection) {
 
 // onWorkerMessage business消息
 func (g *Gateway) onWorkerMessage(conn *worker.Connection, data []byte) {
-	var msg BusinessMessage
+	var msg GatewayMessage
 	if err := json.Unmarshal(data, &msg); err != nil {
 		logger.Sugar.Errorf("invalid message body %v, error: %v", conn.Id(), string(data), err.Error())
 		return
@@ -256,7 +256,7 @@ func (g *Gateway) sendToWorker(cmd protocol.Protocol, conn *worker.Connection, d
 		return
 	}
 
-	msg := &BusinessMessage{
+	msg := &GatewayMessage{
 		Cmd:  cmd,
 		Body: data,
 	}
@@ -287,7 +287,7 @@ func (g *Gateway) router() (*worker.Connection, error) {
 
 // pingBusinessWorker 向 BusinessWorker 发送心跳数据，用于保持长连接
 func (g *Gateway) pingBusinessWorker() {
-	msg := (&BusinessMessage{
+	msg := (&GatewayMessage{
 		Cmd: protocol.CMD_PING,
 	}).Bytes()
 	g.workerConnections.Range(func(key, value interface{}) bool {
