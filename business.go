@@ -58,7 +58,7 @@ func (b *Business) connectToRegister() {
 			logger.Sugar.Panic(err)
 		}
 
-		logger.Sugar.Infof("register %v 已连接", b.c.RegisterAddress)
+		logger.Sugar.Infof("Business: register %v 已连接", b.c.RegisterAddress)
 
 		ping = timer.NewTimer(b.c.PingInterval, func() {
 			conn.Send(PingData)
@@ -70,11 +70,11 @@ func (b *Business) connectToRegister() {
 		if ping != nil {
 			ping.Stop()
 		}
-		logger.Sugar.Infof("register %v 已断开连接", b.c.RegisterAddress)
+		logger.Sugar.Infof("Business: register %v 已断开连接", b.c.RegisterAddress)
 		// 重新连接
 		time.AfterFunc(2*time.Second, func() {
 			for {
-				logger.Sugar.Infof("register %v 正在尝试重新连接", b.c.RegisterAddress)
+				logger.Sugar.Infof("Business: register %v 正在尝试重新连接", b.c.RegisterAddress)
 
 				if err := c.Connect(); err != nil {
 					logger.Sugar.Error(err)
@@ -114,7 +114,7 @@ func (b *Business) onRegisterConnectionMessage(conn *client.AsyncTcpConnection, 
 
 		b.checkGatewayConnections(msg.Addresses)
 	default:
-		logger.Sugar.Infof("Receive bad event:%v from Register. \n", msg.Event)
+		logger.Sugar.Infof("Business: Receive bad event:%v from Register. \n", msg.Event)
 	}
 }
 
@@ -195,6 +195,6 @@ func (b *Business) onGatewayMessage(conn *client.AsyncTcpConnection, data []byte
 	case protocol.CMD_PING:
 
 	default:
-		logger.Sugar.Warnf("Unknown cmd: %v", msg.Cmd)
+		logger.Sugar.Warnf("Business: unknown cmd: %v", msg.Cmd)
 	}
 }

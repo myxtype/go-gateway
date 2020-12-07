@@ -141,7 +141,7 @@ func (g *Gateway) registerAddress() {
 			logger.Sugar.Panic(err)
 		}
 
-		logger.Sugar.Infof("register %v 已连接", g.c.RegisterAddress)
+		logger.Sugar.Infof("Gateway: register %v 已连接", g.c.RegisterAddress)
 
 		ping = timer.NewTimer(g.c.PingInterval, func() {
 			conn.Send(PingData)
@@ -153,11 +153,11 @@ func (g *Gateway) registerAddress() {
 		if ping != nil {
 			ping.Stop()
 		}
-		logger.Sugar.Infof("register %v 已断开连接", g.c.RegisterAddress)
+		logger.Sugar.Infof("Gateway: register %v 已断开连接", g.c.RegisterAddress)
 		// 重新连接
 		time.AfterFunc(2*time.Second, func() {
 			for {
-				logger.Sugar.Infof("register %v 正在尝试重新连接", g.c.RegisterAddress)
+				logger.Sugar.Infof("Gateway: register %v 正在尝试重新连接", g.c.RegisterAddress)
 
 				if err := c.Connect(); err != nil {
 					logger.Sugar.Error(err)
@@ -198,7 +198,7 @@ func (g *Gateway) onWorkerMessage(conn *worker.Connection, data []byte) {
 	// 判断否是否认证
 	if _, found := conn.Payload.Load("authorized"); !found {
 		if msg.Cmd != protocol.CMD_WORKER_CONNECT && msg.Cmd != protocol.CMD_GATEWAY_CLIENT_CONNECT {
-			logger.Sugar.Infof("Unauthorized request from %v", conn.RemoteAddr().String())
+			logger.Sugar.Infof("Gateway: Unauthorized request from %v", conn.RemoteAddr().String())
 			conn.Close()
 			return
 		}
@@ -244,7 +244,7 @@ func (g *Gateway) onWorkerMessage(conn *worker.Connection, data []byte) {
 	case protocol.CMD_SEND_TO_ALL:
 
 	default:
-		logger.Sugar.Infof("Gateway inner pack err cmd=%v", msg.Cmd)
+		logger.Sugar.Infof("Gateway: inner pack err cmd=%v", msg.Cmd)
 	}
 }
 
