@@ -73,6 +73,14 @@ func (g *Gateway) OnWorkerStop() {
 func (g *Gateway) OnConnect(conn *worker.Connection) {
 	g.clientConnections.Store(conn.Id(), conn)
 
+	// 初始化客户端信息
+	remote := map[string]interface{}{
+		"gatewayAddr":      g.c.Addr,
+		"gatewayInnerAddr": g.c.InnerAddr,
+		"clientAddr":       conn.RemoteAddr().String(),
+	}
+	conn.Payload.Store("remote", remote)
+
 	g.sendToWorker(protocol.CMD_ON_CONNECT, conn, nil)
 }
 

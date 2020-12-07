@@ -12,7 +12,8 @@ import (
 )
 
 type Business struct {
-	c *BusinessConfig
+	c       *BusinessConfig
+	handler BusinessEventsInterface
 
 	gatewayConnections             sync.Map
 	gatewayAddresses               map[string]struct{}
@@ -27,9 +28,11 @@ type BusinessConfig struct {
 	Certificate     string        // 连接凭证，为空表示无凭证
 }
 
-func NewBusiness(conf *BusinessConfig) *Business {
+func NewBusiness(handler BusinessEventsInterface, conf *BusinessConfig) *Business {
 	return &Business{
-		c:                              conf,
+		c:       conf,
+		handler: handler,
+
 		gatewayConnections:             sync.Map{},
 		gatewayAddresses:               map[string]struct{}{},
 		connectingGatewayAddresses:     map[string]struct{}{},
@@ -162,8 +165,8 @@ func (b *Business) onGatewayConnect(conn *client.AsyncTcpConnection) {
 
 	// 发送认证
 	if err := conn.Send((&BusinessMessage{
-		Cmd:  protocol.CMD_WORKER_CONNECT,
-		Body: []byte(b.c.Certificate),
+		Cmd:     protocol.CMD_WORKER_CONNECT,
+		Body:    []byte(b.c.Certificate),
 		ExtData: nil,
 	}).Bytes()); err != nil {
 		logger.Sugar.Error(err)
@@ -190,5 +193,24 @@ func (b *Business) onGatewayClose(conn *client.AsyncTcpConnection) {
 }
 
 func (b *Business) onGatewayMessage(conn *client.AsyncTcpConnection, data []byte) {
-	logger.Sugar.Info(string(data))
+	var msg BusinessMessage
+	if err := json.Unmarshal(data, &msg); err != nil {
+		logger.Sugar.Error(err)
+		return
+	}
+
+	switch msg.Cmd {
+	case protocol.CMD_ON_CONNECT:
+		b.handler.OnConnect(msg.ConnId)
+	case protocol.CMD_ON_MESSAGE:
+		if bem, err := NewBusinessEventsMessage(&msg); err == nil {
+			b.handler.OnMessage(msg.ConnId, bem)
+		} else {
+			logger.Sugar.Error(err)
+		}
+	case protocol.CMD_ON_CLOSE:
+		b.handler.OnClose(msg.ConnId)
+	default:
+		logger.Sugar.Warnf("Unknown cmd: %v", msg.Cmd)
+	}
 }
