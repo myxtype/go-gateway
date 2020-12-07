@@ -6,7 +6,6 @@ import (
 	"github.com/myxtype/go-gateway/pkg/logger"
 	"github.com/myxtype/go-gateway/pkg/timer"
 	"github.com/myxtype/go-gateway/protocol"
-	"github.com/myxtype/go-gateway/worker"
 	"sync"
 	"time"
 )
@@ -22,7 +21,6 @@ type Business struct {
 }
 
 type BusinessConfig struct {
-	Addr            string        // 监听地址
 	RegisterAddress string        // 注册中心地址
 	PingInterval    time.Duration // 心跳时间
 	Certificate     string        // 连接凭证，为空表示无凭证
@@ -40,34 +38,9 @@ func NewBusiness(handler BusinessEventsInterface, conf *BusinessConfig) *Busines
 	}
 }
 
-func (e *Business) Start() error {
-	w := worker.NewWorker(e.c.Addr, e)
-
-	if err := w.Start(); err != nil {
-		return err
-	}
+func (b *Business) Start() error {
+	b.connectToRegister()
 	return nil
-}
-
-func (b *Business) OnWorkerStart() {
-
-	go b.connectToRegister()
-}
-
-func (b *Business) OnConnect(conn *worker.Connection) {
-
-}
-
-func (b *Business) OnMessage(conn *worker.Connection, data []byte) {
-	logger.Sugar.Debug(string(data))
-}
-
-func (b *Business) OnClose(conn *worker.Connection) {
-
-}
-
-func (b *Business) OnWorkerStop() {
-
 }
 
 func (b *Business) connectToRegister() {
@@ -79,7 +52,6 @@ func (b *Business) connectToRegister() {
 		buffer := (&RegisterMessage{
 			Event:       "worker_connect",
 			Certificate: b.c.Certificate,
-			Address:     b.c.Addr,
 		}).Bytes()
 
 		if err := conn.Send(buffer); err != nil {
