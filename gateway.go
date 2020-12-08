@@ -404,6 +404,7 @@ func (g *Gateway) sendToWorker(cmd protocol.Protocol, conn *worker.Connection, d
 	msg := &GatewayMessage{
 		Cmd:  cmd,
 		Body: data,
+		ConnId: conn.Id(),
 	}
 	if v, found := conn.Payload.Load("session"); found {
 		msg.Session = v.(map[string]interface{})
