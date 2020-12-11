@@ -84,23 +84,3 @@ const CMD_GET_SESSION_BY_CLIENT_ID = Protocol(203)
 
 // 发给gateway，覆盖session
 const CMD_SET_SESSION = Protocol(204)
-
-// 当websocket握手时触发，只有websocket协议支持此命令字
-const CMD_ON_WEBSOCKET_CONNECT = Protocol(205)
-
-// 包体是标量
-const FLAG_BODY_IS_SCALAR = Protocol(0x01)
-
-// 通知gateway在send时不调用协议encode方法，在广播组播时提升性能
-const FLAG_NOT_CALL_ENCODE = Protocol(0x02)
-
-// 包头长度
-const HEAD_LEN = 28
-
-func Input(buffer []byte) int {
-	if len(buffer) < HEAD_LEN {
-		return 0
-	}
-
-	return len(buffer)
-}
