@@ -348,7 +348,7 @@ func (g *Gateway) onWorkerMessage(conn *worker.Connection, data []byte) {
 			}
 
 			c.Payload.Store("uid", uid)
-			uidPools.Load(msg.ConnId)
+			uidPools.Store(msg.ConnId)
 		}
 
 	case protocol.CMD_UNBIND_UID: // 将clientId与Uid解除绑定
@@ -388,6 +388,31 @@ func (g *Gateway) onWorkerMessage(conn *worker.Connection, data []byte) {
 			}
 		}
 
+	case protocol.CMD_JOIN_GROUP: // 将 $client_id 加入用户组
+		var groupName string
+		if err := msg.UnmarshalExtData(&groupName); err != nil {
+			logger.Sugar.Error(err)
+			return
+		}
+		if _, found := g.clientConnections.Load(msg.ConnId); !found {
+			return
+		}
+		// 加入组
+		var group = types.NewMapString()
+		if v, found := g.groupConnections.Load(groupName); found {
+			group = v.(*types.MapString)
+		} else {
+			g.groupConnections.Store(groupName, group)
+		}
+		group.Store(msg.ConnId)
+		// 标记此连接
+		if v, found := conn.Payload.Load("groups"); found {
+			has := append(v.([]string), groupName)
+			conn.Payload.Store("groups", has)
+		} else {
+			conn.Payload.Store("groups", []string{groupName})
+		}
+
 	default:
 		logger.Sugar.Infof("inner pack err cmd=%v", msg.Cmd)
 	}
@@ -402,8 +427,8 @@ func (g *Gateway) sendToWorker(cmd protocol.Protocol, conn *worker.Connection, d
 	}
 
 	msg := &GatewayMessage{
-		Cmd:  cmd,
-		Body: data,
+		Cmd:    cmd,
+		Body:   data,
 		ConnId: conn.Id(),
 	}
 	if v, found := conn.Payload.Load("session"); found {

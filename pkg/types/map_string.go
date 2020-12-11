@@ -17,6 +17,10 @@ func (m *MapString) Load(key string) bool {
 	return found
 }
 
+func (m *MapString) Store(key string) {
+	m.data[key] = struct{}{}
+}
+
 func (m *MapString) Length() int {
 	return len(m.data)
 }
